@@ -322,6 +322,10 @@ function App() {
                       <span className="text-gray-600">Custo/Conv:</span>
                       <span className="ml-2 font-medium">{formatCurrency(campaign.costPerConversion)}</span>
                     </div>
+                    <div>
+                      <span className="text-gray-600">Custo:</span>
+                      <span className="ml-2 font-medium">{formatCurrency(campaign.cost)}</span>
+                    </div>
                   </div>
                 </div>
               ))}
