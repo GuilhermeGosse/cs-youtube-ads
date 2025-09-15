@@ -232,39 +232,8 @@ function App() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Chart Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                <BarChart3 className="mr-2 text-blue-600" size={24} />
-                Performance por Campanha
-              </h2>
-              <div className="flex items-center space-x-2">
-                <Filter size={16} className="text-gray-500" />
-                <select 
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'cost' | 'conversions' | 'clicks')}
-                  className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="cost">Por Custo</option>
-                  <option value="conversions">Por Conversões</option>
-                  <option value="clicks">Por Cliques</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {filteredCampaigns.map((campaign) => (
-                <CampaignBar 
-                  key={campaign.id}
-                  campaign={campaign}
-                  maxValue={Math.max(...filteredCampaigns.map(c => c[sortBy as keyof Campaign] as number))}
-                  metric={sortBy}
-                />
-              ))}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+      
 
           {/* Detailed Table */}
           <div className="bg-white rounded-xl shadow-lg p-6">
