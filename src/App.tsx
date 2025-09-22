@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { BarChart3, TrendingUp, MousePointer, Eye, DollarSign, Target, Filter, Calendar, Activity } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { BarChart3, TrendingUp, MousePointer, Eye, DollarSign, Target, Calendar, Activity } from 'lucide-react';
 
 interface Campaign {
   id: string;
@@ -15,85 +15,57 @@ interface Campaign {
   costPerConversion: number;
 }
 
-const campaignsData: Campaign[] = [
-  {
-    id: '1',
-    name: '[CS] Youtube - #BATERIAS de LÍTIO - Engaj | 25.08',
-    status: 'Ativada',
-    type: 'Geração de demanda',
-    clicks: 136,
-    impressions: 85992,
-    ctr: 0.16,
-    avgCpc: 0.69,
-    cost: 93.43,
-    conversions: 143,
-    costPerConversion: 0.65
-  },
-  {
-    id: '2',
-    name: '[CS] Youtube - #Cabos Elétricos | 26.08',
-    status: 'Ativada',
-    type: 'Geração de demanda',
-    clicks: 417,
-    impressions: 239225,
-    ctr: 0.17,
-    avgCpc: 0.76,
-    cost: 315.60,
-    conversions: 575,
-    costPerConversion: 0.55
-  },
-  {
-    id: '3',
-    name: '[CS] Youtube - #Célula Fotovoltaica - Engaj | 15.04',
-    status: 'Pausada',
-    type: 'Geração de demanda',
-    clicks: 94,
-    impressions: 118360,
-    ctr: 0.08,
-    avgCpc: 0.73,
-    cost: 68.24,
-    conversions: 91,
-    costPerConversion: 0.75
-  },
-  {
-    id: '4',
-    name: '[CS] Youtube - #Intersolar Europa - Engaj | 02.06',
-    status: 'Ativada',
-    type: 'Geração de demanda',
-    clicks: 487,
-    impressions: 229452,
-    ctr: 0.21,
-    avgCpc: 0.69,
-    cost: 337.10,
-    conversions: 606,
-    costPerConversion: 0.56
-  },
-  {
-    id: '5',
-    name: '[CS] Youtube - #Painel Solar - Engaj | 16.04',
-    status: 'Ativada',
-    type: 'Geração de demanda',
-    clicks: 288,
-    impressions: 169951,
-    ctr: 0.17,
-    avgCpc: 0.83,
-    cost: 239.04,
-    conversions: 345,
-    costPerConversion: 0.69
-  }
-];
-
 function App() {
   const [statusFilter, setStatusFilter] = useState<'Todos' | 'Ativada' | 'Pausada'>('Todos');
   const [sortBy, setSortBy] = useState<'cost' | 'conversions' | 'clicks'>('cost');
+  const [campaignsData, setCampaignsData] = useState<Campaign[]>([]);
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
+  start: '',
+  end: ''
+});
 
-  const filteredCampaigns = useMemo(() => {
-    let filtered = campaignsData;
-    if (statusFilter !== 'Todos') {
-      filtered = filtered.filter(campaign => campaign.status === statusFilter);
-    }
-    return filtered.sort((a, b) => b[sortBy] - a[sortBy]);
-  }, [statusFilter, sortBy]);
+  useEffect(() => {
+    fetch('http://localhost/api/products')
+      .then(res => res.json())
+      .then(data => {
+        const formatted: Campaign[] = data.map((c: any) => ({
+          id: String(c.id),
+          name: c.campaign_name,
+          status: 'Ativada',
+          type: 'Geração de demanda', 
+          clicks: Number(c.clicks),
+          date: c.date,
+          impressions: Number(c.impressions),
+          ctr: Number(c.ctr),
+          avgCpc: Number(c.clicks) ? Number(c.cost) / Number(c.clicks) : 0,
+          cost: Number(c.cost),
+          conversions: Number(c.conversions),
+          costPerConversion: Number(c.cost_per_conversion) || (Number(c.conversions) ? Number(c.cost)/Number(c.conversions) : 0)
+        }));
+        setCampaignsData(formatted);
+      })
+      .catch(err => console.error('Erro ao carregar dados:', err));
+  }, []);
+
+ const filteredCampaigns = useMemo(() => {
+  let filtered = campaignsData;
+
+  // filtro por status
+  if (statusFilter !== 'Todos') {
+    filtered = filtered.filter(c => c.status === statusFilter);
+  }
+
+  // filtro por data
+  if (dateRange.start) {
+    filtered = filtered.filter(c => new Date(c.date) >= new Date(dateRange.start));
+  }
+  if (dateRange.end) {
+    filtered = filtered.filter(c => new Date(c.date) <= new Date(dateRange.end));
+  }
+
+  // ordenação
+  return filtered.sort((a, b) => b[sortBy] - a[sortBy]);
+}, [statusFilter, sortBy, campaignsData, dateRange]);
 
   const totals = useMemo(() => {
     return filteredCampaigns.reduce(
@@ -107,16 +79,11 @@ function App() {
     );
   }, [filteredCampaigns]);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-  const formatNumber = (value: number) => {
-    return new Intl.NumberFormat('pt-BR').format(value);
-  };
+  const formatNumber = (value: number) =>
+    new Intl.NumberFormat('pt-BR').format(value);
 
   const MetricCard = ({ title, value, subtitle, icon: Icon, gradient, textColor = 'text-white' }: {
     title: string;
@@ -174,33 +141,41 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
-      {/* Header */}
       <header className="bg-white shadow-md border-b-4 border-gradient-to-r from-green-400 to-blue-500">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <img 
-                src="https://email-editor-production.s3.amazonaws.com/images/125720/%24ctjhglra79w.png" 
-                alt="Canal Solar" 
-                className="h-12 w-auto"
-              />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Dashboard de Campanhas</h1>
-                <p className="text-gray-600">Performance das Campanhas - YouTube</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-lg">
-              <Calendar size={20} className="text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">
-                7 de setembro - 15 de setembro de 2025
-              </span>
+        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <img 
+              src="https://email-editor-production.s3.amazonaws.com/images/125720/%24ctjhglra79w.png" 
+              alt="Canal Solar" 
+              className="h-12 w-auto"
+            />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard de Campanhas</h1>
+              <p className="text-gray-600">Performance das Campanhas - YouTube</p>
             </div>
           </div>
+<div className="flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-lg">
+  <Calendar size={20} className="text-blue-600" />
+  <input
+    type="date"
+    value={dateRange.start || ''}
+    onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+    className="text-sm font-medium text-blue-800"
+  />
+  <span>-</span>
+  <input
+    type="date"
+    value={dateRange.end || ''}
+    onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+    className="text-sm font-medium text-blue-800"
+  />
+</div>
+
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Metrics Cards */}
+        {/* Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
             title="Total de Impressões"
@@ -232,73 +207,42 @@ function App() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-      
+        {/* Campaigns List */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center">
+              <Activity className="mr-2 text-green-600" size={24} />
+              Detalhes das Campanhas
+            </h2>
+            <select 
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value as 'Todos' | 'Ativada' | 'Pausada')}
+              className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="Todos">Todos os Status</option>
+              <option value="Ativada">Ativada</option>
+              <option value="Pausada">Pausada</option>
+            </select>
+          </div>
 
-          {/* Detailed Table */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                <Activity className="mr-2 text-green-600" size={24} />
-                Detalhes das Campanhas
-              </h2>
-              <div className="flex items-center space-x-2">
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'Todos' | 'Ativada' | 'Pausada')}
-                  className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="Todos">Todos os Status</option>
-                  <option value="Ativada">Ativada</option>
-                  <option value="Pausada">Pausada</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="overflow-y-auto max-h-96">
-              {filteredCampaigns.map((campaign) => (
-                <div 
-                  key={campaign.id}
-                  className="border border-gray-200 rounded-lg p-4 mb-4 hover:shadow-md transition-all duration-200"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900 text-sm truncate max-w-xs">
-                      {campaign.name.replace('[CS] Youtube - ', '')}
-                    </h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      campaign.status === 'Ativada' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {campaign.status}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">CTR:</span>
-                      <span className="ml-2 font-medium">{campaign.ctr.toFixed(2)}%</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">CPC:</span>
-                      <span className="ml-2 font-medium">{formatCurrency(campaign.avgCpc)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Conversões:</span>
-                      <span className="ml-2 font-medium text-green-600">{formatNumber(campaign.conversions)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Custo/Conv:</span>
-                      <span className="ml-2 font-medium">{formatCurrency(campaign.costPerConversion)}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Custo:</span>
-                      <span className="ml-2 font-medium">{formatCurrency(campaign.cost)}</span>
-                    </div>
-                  </div>
+          <div className="overflow-y-auto max-h-96">
+            {filteredCampaigns.map(c => (
+              <div key={c.id} className="border border-gray-200 rounded-lg p-4 mb-4 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900 text-sm truncate max-w-xs">{c.name.replace('[CS] Youtube - ', '')}</h3>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    c.status === 'Ativada' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>{c.status}</span>
                 </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><span className="text-gray-600">CTR:</span> <span className="ml-2 font-medium">{c.ctr.toFixed(2)}%</span></div>
+                  <div><span className="text-gray-600">CPC:</span> <span className="ml-2 font-medium">{formatCurrency(c.avgCpc)}</span></div>
+                  <div><span className="text-gray-600">Conversões:</span> <span className="ml-2 font-medium text-green-600">{formatNumber(c.conversions)}</span></div>
+                  <div><span className="text-gray-600">Custo/Conv:</span> <span className="ml-2 font-medium">{formatCurrency(c.costPerConversion)}</span></div>
+                  <div><span className="text-gray-600">Custo:</span> <span className="ml-2 font-medium">{formatCurrency(c.cost)}</span></div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -308,26 +252,17 @@ function App() {
             <TrendingUp className="mr-2 text-purple-600" size={24} />
             Resumo de Performance
           </h2>
-          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-3xl font-bold text-blue-600">
-                {((totals.clicks / totals.impressions) * 100).toFixed(2)}%
-              </p>
+              <p className="text-3xl font-bold text-blue-600">{((totals.clicks / totals.impressions) * 100).toFixed(2)}%</p>
               <p className="text-gray-600 mt-2">CTR Médio Geral</p>
             </div>
-            
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-3xl font-bold text-green-600">
-                {formatCurrency(totals.cost / totals.conversions)}
-              </p>
+              <p className="text-3xl font-bold text-green-600">{formatCurrency(totals.cost / (totals.conversions || 1))}</p>
               <p className="text-gray-600 mt-2">Custo Médio por Conversão</p>
             </div>
-            
             <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <p className="text-3xl font-bold text-orange-600">
-                {formatCurrency(totals.cost / totals.clicks)}
-              </p>
+              <p className="text-3xl font-bold text-orange-600">{formatCurrency(totals.cost / (totals.clicks || 1))}</p>
               <p className="text-gray-600 mt-2">CPC Médio Geral</p>
             </div>
           </div>
