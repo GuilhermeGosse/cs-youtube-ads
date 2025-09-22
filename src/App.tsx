@@ -25,7 +25,7 @@ function App() {
 });
 
   useEffect(() => {
-    fetch('http://localhost/api/products')
+    fetch('https://app.consultoriacs.com.br/api/products')
       .then(res => res.json())
       .then(data => {
         const formatted: Campaign[] = data.map((c: any) => ({
