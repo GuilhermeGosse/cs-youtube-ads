@@ -74,7 +74,7 @@ const campaignsData: Campaign[] = [
     status: 'Ativada',
     type: 'Geração de demanda',
     clicks: 288,
-    impressions: 169951,
+    impressions: 269951,
     ctr: 0.17,
     avgCpc: 0.83,
     cost: 239.04,
