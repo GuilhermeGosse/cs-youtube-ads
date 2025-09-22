@@ -1,5 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart3, TrendingUp, MousePointer, Eye, DollarSign, Target, Calendar, Activity } from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  ResponsiveContainer, 
+  CartesianGrid 
+} from 'recharts';
 
 interface Campaign {
   id: string;
@@ -18,6 +27,7 @@ interface Campaign {
 function App() {
   const [statusFilter, setStatusFilter] = useState<'Todos' | 'Ativada' | 'Pausada'>('Todos');
   const [sortBy, setSortBy] = useState<'cost' | 'conversions' | 'clicks'>('cost');
+  const [searchTerm, setSearchTerm] = useState('');
   const [campaignsData, setCampaignsData] = useState<Campaign[]>([]);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
   start: '',
@@ -47,7 +57,7 @@ function App() {
       .catch(err => console.error('Erro ao carregar dados:', err));
   }, []);
 
- const filteredCampaigns = useMemo(() => {
+const filteredCampaigns = useMemo(() => {
   let filtered = campaignsData;
 
   // filtro por status
@@ -63,9 +73,16 @@ function App() {
     filtered = filtered.filter(c => new Date(c.date) <= new Date(dateRange.end));
   }
 
+  // filtro por nome da campanha
+  if (searchTerm) {
+    filtered = filtered.filter(c =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
+
   // ordenação
   return filtered.sort((a, b) => b[sortBy] - a[sortBy]);
-}, [statusFilter, sortBy, campaignsData, dateRange]);
+}, [statusFilter, sortBy, campaignsData, dateRange, searchTerm]);
 
   const totals = useMemo(() => {
     return filteredCampaigns.reduce(
@@ -78,6 +95,20 @@ function App() {
       { clicks: 0, impressions: 0, cost: 0, conversions: 0 }
     );
   }, [filteredCampaigns]);
+
+  const top5 = useMemo(() => {
+  return [...filteredCampaigns]
+    .filter(c => c.conversions > 0) // só considera campanhas com conversão
+    .sort((a, b) => a.costPerConversion - b.costPerConversion)
+    .slice(0, 5);
+}, [filteredCampaigns]);
+
+const worst5 = useMemo(() => {
+  return [...filteredCampaigns]
+    .filter(c => c.conversions > 0)
+    .sort((a, b) => b.costPerConversion - a.costPerConversion)
+    .slice(0, 5);
+}, [filteredCampaigns]);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -122,7 +153,7 @@ function App() {
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-700 truncate max-w-md">
-            {campaign.name.replace('[CS] Youtube - ', '')}
+            {campaign.name}
           </span>
           <span className="text-sm font-bold text-gray-900">
             {metric === 'cost' ? formatCurrency(campaign[metric as keyof Campaign] as number) : 
@@ -168,6 +199,13 @@ function App() {
     value={dateRange.end || ''}
     onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
     className="text-sm font-medium text-blue-800"
+  />
+   <input
+    type="text"
+    placeholder="Buscar campanha..."
+    value={searchTerm}
+    onChange={e => setSearchTerm(e.target.value)}
+    className="border border-gray-300 rounded-lg px-2 py-1 text-sm"
   />
 </div>
 
@@ -245,7 +283,36 @@ function App() {
             ))}
           </div>
         </div>
+{/* Nova seção - Top 5 e Piores 5 */}
+<div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+  {/* Top 5 */}
+  <div className="bg-white rounded-xl shadow-lg p-6">
+    <h2 className="text-xl font-bold text-green-600 mb-4">Top 5 - Melhor Custo por Conversão</h2>
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={top5} layout="vertical" margin={{ left: 40 }}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis type="number" />
+        <YAxis dataKey="name" type="category" width={200} />
+        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+        <Bar dataKey="costPerConversion" fill="#10b981" />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
 
+  {/* Piores 5 */}
+  <div className="bg-white rounded-xl shadow-lg p-6">
+    <h2 className="text-xl font-bold text-red-600 mb-4">Piores 5 - Maior Custo por Conversão</h2>
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart data={worst5} layout="vertical" margin={{ left: 40 }}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis type="number" />
+        <YAxis dataKey="name" type="category" width={200} />
+        <Tooltip formatter={(value: number) => formatCurrency(value)} />
+        <Bar dataKey="costPerConversion" fill="#ef4444" />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+</div>
         {/* Summary Stats */}
         <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
