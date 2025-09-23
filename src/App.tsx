@@ -179,7 +179,17 @@ function App() {
               <p className="text-gray-600">Performance das Campanhas</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-lg">
+        
+        </div>
+      </header>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+           <MetricCard title="Total de Impressões" value={formatNumber(totals.impressions)} subtitle="Alcance total das campanhas" icon={Eye} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" />
+           <MetricCard title="Total de Cliques" value={formatNumber(totals.clicks)} subtitle="Engajamento gerado" icon={MousePointer} gradient="bg-gradient-to-br from-cyan-500 to-cyan-600" />
+           <MetricCard title="Investimento Total" value={formatCurrency(totals.cost)} subtitle="Custo das campanhas" icon={DollarSign} gradient="bg-gradient-to-br from-orange-500 to-red-500" />
+           <MetricCard title="Total de Conversões" value={formatNumber(totals.conversions)} subtitle="Resultados alcançados" icon={Target} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
+        </div>
+        <div className="flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-lg">
             <input
               type="date"
               value={dateRange.start || ''}
@@ -201,16 +211,6 @@ function App() {
               className="border border-gray-300 rounded-lg px-2 py-1 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
-        </div>
-      </header>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-           <MetricCard title="Total de Impressões" value={formatNumber(totals.impressions)} subtitle="Alcance total das campanhas" icon={Eye} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" />
-           <MetricCard title="Total de Cliques" value={formatNumber(totals.clicks)} subtitle="Engajamento gerado" icon={MousePointer} gradient="bg-gradient-to-br from-cyan-500 to-cyan-600" />
-           <MetricCard title="Investimento Total" value={formatCurrency(totals.cost)} subtitle="Custo das campanhas" icon={DollarSign} gradient="bg-gradient-to-br from-orange-500 to-red-500" />
-           <MetricCard title="Total de Conversões" value={formatNumber(totals.conversions)} subtitle="Resultados alcançados" icon={Target} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
-        </div>
-
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900 flex items-center"><ListChecks className="mr-2 text-blue-600" size={24} />Resumo por Campanha (Total no Período)</h2>
