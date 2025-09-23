@@ -261,6 +261,7 @@ function App() {
                                     <div><span className="text-gray-600">CTR Médio:</span> <span className="ml-2 font-medium">{c.ctr.toFixed(2)}%</span></div>
                                     <div><span className="text-gray-600">CPC Médio:</span> <span className="ml-2 font-medium">{formatCurrency(c.avgCpc)}</span></div>
                                     <div><span className="text-gray-600">Custo/Conv:</span> <span className="ml-2 font-medium">{formatCurrency(c.costPerConversion)}</span></div>
+                                    <div><span className="text-gray-600">Total Impressões:</span> <span className="ml-2 font-medium">{formatNumber(c.impressions)}</span></div>
                                     <div><span className="text-gray-600">Total Conversões:</span> <span className="ml-2 font-medium text-green-600">{formatNumber(c.conversions)}</span></div>
                                     <div><span className="text-gray-600">Total Custo:</span> <span className="ml-2 font-medium">{formatCurrency(c.cost)}</span></div>
                                 </div>
