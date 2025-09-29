@@ -48,7 +48,7 @@ function App() {
   });
 
   useEffect(() => {
-    fetch('https://app.consultoriacs.com.br/api/google_ads')
+    fetch('https://app.consultoriacs.com.br/api/products')
       .then(res => res.json())
       .then(data => {
         const formatted: DailyCampaignEntry[] = data.map((c: any) => ({
