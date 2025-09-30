@@ -6,7 +6,7 @@ import { AggregatedCampaign } from './types';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 console.log(genAI)
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
 function buildPrompt(campaignData: AggregatedCampaign[]): string {
   return `
