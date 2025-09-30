@@ -316,7 +316,6 @@ export function GoogleDashboard() {
             </div>
           </div>
         </div>
-        <AIAnalysisSection campaignData={aggregatedCampaigns} />
       </div>
     </div>
   );
