@@ -3,9 +3,9 @@ import ReactMarkdown from 'react-markdown';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { AggregatedCampaign } from './types';
-import process 
 
 const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || '');
+console.log(genAI)
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
 
 function buildPrompt(campaignData: AggregatedCampaign[]): string {
