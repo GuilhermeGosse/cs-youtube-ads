@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Layers, List, ListChecks, TrendingUp, Eye, Users, DollarSign, Target } from 'lucide-react';
+import { Layers, List, ListChecks, TrendingUp, MousePointer, Eye, Users, DollarSign, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { AggregatedCampaign, DailyCampaignEntry } from './types';
 
 export function MetaDashboard() {
-  const [sortBy, setSortBy] = useState<'cost' | 'conversions' | 'clicks' | 'impressions'>('cost');
+  const [sortBy, setSortBy] = useState<'cost' | 'reach' | 'frequency' | 'conversions' | 'clicks' | 'impressions'>('cost');
   const [searchTerm, setSearchTerm] = useState('');
   const [rawCampaignsData, setRawCampaignsData] = useState<DailyCampaignEntry[]>([]);
   const [detailsView, setDetailsView] = useState<'total' | 'daily'>('total');
@@ -30,6 +30,7 @@ export function MetaDashboard() {
           conversions: Number(c.conversions) || 0,
           avgCpc: (Number(c.clicks) || 0) > 0 ? (Number(c.spend) || 0) / (Number(c.clicks) || 0) : 0,
           costPerConversion: (Number(c.conversions) || 0) > 0 ? (Number(c.spend) || 0) / (Number(c.conversions) || 0) : 0,
+          
         }));
         setRawCampaignsData(formatted);
       })
@@ -67,8 +68,15 @@ export function MetaDashboard() {
       ctr: agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0,
       avgCpc: agg.clicks > 0 ? agg.cost / agg.clicks : 0,
       costPerConversion: agg.conversions > 0 ? agg.cost / agg.conversions : 0,
+      frequency: agg.reach && agg.reach > 0 ? agg.impressions / agg.reach : 0,
     }));
-    return aggregatedList.sort((a, b) => b[sortBy] - a[sortBy]);
+    aggregatedList.sort((a, b) => {
+      const valA = a[sortBy as keyof AggregatedCampaign] as number || 0;
+      const valB = b[sortBy as keyof AggregatedCampaign] as number || 0;
+      return valB - valA;
+    });
+
+    return aggregatedList;
   }, [filteredDailyCampaigns, sortBy]);
 
   const totals = useMemo(() => aggregatedCampaigns.reduce((acc, c) => ({
@@ -78,6 +86,10 @@ export function MetaDashboard() {
     cost: acc.cost + c.cost,
     conversions: acc.conversions + c.conversions
   }), { clicks: 0, impressions: 0, reach: 0, cost: 0, conversions: 0 }), [aggregatedCampaigns]);
+
+   const averageFrequency = useMemo(() => {
+    return totals.reach && totals.reach > 0 ? totals.impressions / totals.reach : 0;
+  }, [totals]);
 
   const top5 = useMemo(() => [...aggregatedCampaigns].filter(c => c.conversions > 0).sort((a, b) => a.costPerConversion - b.costPerConversion).slice(0, 5), [aggregatedCampaigns]);
   const worst5 = useMemo(() => [...aggregatedCampaigns].filter(c => c.conversions > 0).sort((a, b) => b.costPerConversion - a.costPerConversion).slice(0, 5), [aggregatedCampaigns]);
@@ -108,20 +120,27 @@ export function MetaDashboard() {
   const CampaignBar = ({ campaign, maxValue, metric }: { campaign: AggregatedCampaign; maxValue: number; metric: string }) => {
     const value = campaign[metric as keyof AggregatedCampaign] as number;
     const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
-    const getColor = () => {
+    const displayValue = metric === 'cost'
+      ? formatCurrency(value)
+      : metric === 'frequency'
+        ? value.toFixed(2) // Formatação específica para frequência
+        : formatNumber(value);
+      const getColor = () => {
       switch (metric) {
+        case 'reach': return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
         case 'cost': return 'bg-gradient-to-r from-orange-500 to-red-500';
         case 'conversions': return 'bg-gradient-to-r from-green-500 to-emerald-500';
-        case 'clicks': return 'bg-gradient-to-r from-blue-500 to-cyan-500';
+        case 'clicks': return 'bg-gradient-to-r from-blue-400 to-blue-600';
         case 'impressions': return 'bg-gradient-to-r from-purple-500 to-indigo-500';
+        case 'frequency': return 'bg-gradient-to-r from-pink-500 to-rose-500';
         default: return 'bg-gradient-to-r from-gray-500 to-gray-600';
       }
     };
-    return (
+     return (
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700 truncate max-w-md">{campaign.name.replace('[CS] Youtube - ', '')}</span>
-          <span className="text-sm font-bold text-gray-900">{metric === 'cost' ? formatCurrency(value) : formatNumber(value)}</span>
+          <span className="text-sm font-medium text-gray-700 truncate max-w-md">{campaign.name}</span>
+          <span className="text-sm font-bold text-gray-900">{displayValue}</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3">
           <div className={`h-3 rounded-full ${getColor()} transition-all duration-1000 ease-out`} style={{ width: `${percentage}%` }}/>
@@ -131,14 +150,16 @@ export function MetaDashboard() {
   };
 
   const maxValues = useMemo(() => ({
+    reach: Math.max(...aggregatedCampaigns.map(c => c.reach || 0), 0),
     cost: Math.max(...aggregatedCampaigns.map(c => c.cost), 0),
     conversions: Math.max(...aggregatedCampaigns.map(c => c.conversions), 0),
     clicks: Math.max(...aggregatedCampaigns.map(c => c.clicks), 0),
     impressions: Math.max(...aggregatedCampaigns.map(c => c.impressions), 0),
+    frequency: Math.max(...aggregatedCampaigns.map(c => c.frequency || 0), 0),
   }), [aggregatedCampaigns]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-pink-50">
       <header className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
           <div className="flex items-center space-x-4">
@@ -155,8 +176,9 @@ export function MetaDashboard() {
         </div>
       </header>
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-           <MetricCard title="Total de Alcance" value={formatNumber(totals.reach || 0)} subtitle="Pessoas únicas alcançadas" icon={Users} gradient="bg-gradient-to-br from-cyan-500 to-blue-500" />
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+           <MetricCard title="Total de Cliques" value={formatNumber(totals.clicks)} subtitle="Cliques nos anúncios" icon={MousePointer} gradient="bg-gradient-to-br from-blue-400 to-blue-600" />
+           <MetricCard title="Total de Alcance" value={formatNumber(totals.reach || 0)} subtitle="Pessoas únicas alcançadas" icon={Users} gradient="bg-gradient-to-br from-yellow-500 to-yellow-600" />
            <MetricCard title="Total de Impressões" value={formatNumber(totals.impressions)} subtitle="Exibições dos anúncios" icon={Eye} gradient="bg-gradient-to-br from-purple-500 to-indigo-600" />
            <MetricCard title="Investimento Total" value={formatCurrency(totals.cost)} subtitle="Custo das campanhas" icon={DollarSign} gradient="bg-gradient-to-br from-orange-500 to-red-500" />
            <MetricCard title="Total de Resultados" value={formatNumber(totals.conversions)} subtitle="Conversões geradas" icon={Target} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
@@ -193,10 +215,12 @@ export function MetaDashboard() {
                         onChange={e => setSortBy(e.target.value as any)}
                         className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                      >
+                        <option value="reach">Alcance</option>
                         <option value="cost">Custo</option>
                         <option value="conversions">Conversões</option>
                         <option value="clicks">Cliques</option>
                         <option value="impressions">Impressões</option>
+                        <option value="frequency">Frequência</option>
                      </select>
                 </div>
             </div>
@@ -228,13 +252,16 @@ export function MetaDashboard() {
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="font-semibold text-gray-900 text-sm truncate max-w-md">{c.name.replace('[CS] Youtube - ', '')}</h3>
                                 </div>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                     <div><span className="text-gray-600">CTR Médio:</span> <span className="ml-2 font-medium">{c.ctr.toFixed(2)}%</span></div>
-                                    <div><span className="text-gray-600">CPC Médio:</span> <span className="ml-2 font-medium">{formatCurrency(c.avgCpc)}</span></div>
+                                    <div><span className="text-gray-600">Alcance:</span> <span className="ml-2 font-medium">{formatNumber(c.reach)}</span></div>
                                     <div><span className="text-gray-600">Custo/Conv:</span> <span className="ml-2 font-medium">{formatCurrency(c.costPerConversion)}</span></div>
                                     <div><span className="text-gray-600">Total Impressões:</span> <span className="ml-2 font-medium">{formatNumber(c.impressions)}</span></div>
                                     <div><span className="text-gray-600">Total Conversões:</span> <span className="ml-2 font-medium text-green-600">{formatNumber(c.conversions)}</span></div>
                                     <div><span className="text-gray-600">Total Custo:</span> <span className="ml-2 font-medium">{formatCurrency(c.cost)}</span></div>
+                                    <div><span className="text-gray-600">Total Cliques:</span> <span className="ml-2 font-medium">{formatNumber(c.clicks)}</span></div>
+                                    <div><span className="text-gray-600">CPC Médio:</span> <span className="ml-2 font-medium">{formatCurrency(c.avgCpc)}</span></div>
+                                    <div><span className="text-gray-600">Frequência Média:</span> <span className="ml-2 font-medium">{c.frequency ? c.frequency.toFixed(2) : '0.00'}</span></div>
                                 </div>
                             </div>
                         ))}
@@ -249,13 +276,16 @@ export function MetaDashboard() {
                                     <h3 className="font-semibold text-gray-900 text-sm truncate max-w-xs">{c.name.replace('[CS] Youtube - ', '')}</h3>
                                     <span className="text-xs font-mono bg-gray-100 text-gray-700 px-2 py-1 rounded">{new Date(c.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
                                 </div>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                     <div><span className="text-gray-600">Impressões:</span> <span className="ml-2 font-medium">{formatNumber(c.impressions)}</span></div>
                                     <div><span className="text-gray-600">Cliques:</span> <span className="ml-2 font-medium">{formatNumber(c.clicks)}</span></div>
                                     <div><span className="text-gray-600">Conversões:</span> <span className="ml-2 font-medium text-green-600">{formatNumber(c.conversions)}</span></div>
                                     <div><span className="text-gray-600">Custo:</span> <span className="ml-2 font-medium">{formatCurrency(c.cost)}</span></div>
-                                    <div><span className="text-gray-600">CPC Médio:</span> <span className="ml-2 font-medium">{formatCurrency(c.avgCpc)}</span></div>
+                                    <div><span className="text-gray-600">Alcance:</span> <span className="ml-2 font-medium">{formatNumber(c.reach)}</span></div>
                                     <div><span className="text-gray-600">Custo/Conv:</span> <span className="ml-2 font-medium">{formatCurrency(c.costPerConversion)}</span></div>
+                                    <div><span className="text-gray-600">Total Cliques:</span> <span className="ml-2 font-medium">{formatNumber(c.clicks)}</span></div>
+                                    <div><span className="text-gray-600">CPC Médio:</span> <span className="ml-2 font-medium">{formatCurrency(c.avgCpc)}</span></div>
+                                    <div><span className="text-gray-600">Frequência:</span> <span className="ml-2 font-medium">{c.reach && c.reach > 0 ? (c.impressions / c.reach).toFixed(2) : '0.00'}</span></div>
                                 </div>
                             </div>
                         ))}
@@ -270,7 +300,7 @@ export function MetaDashboard() {
               <BarChart data={top5} layout="vertical" margin={{ left: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-                <YAxis dataKey="name" type="category" width={200} tickFormatter={(value) => value.replace('[CS] Youtube - ', '')} />
+                <YAxis dataKey="name" type="category" width={200} tickFormatter={(value) => value} />
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Bar dataKey="costPerConversion" fill="#10b981" />
               </BarChart>
@@ -282,7 +312,7 @@ export function MetaDashboard() {
               <BarChart data={worst5} layout="vertical" margin={{ left: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-                <YAxis dataKey="name" type="category" width={200} tickFormatter={(value) => value.replace('[CS] Youtube - ', '')} />
+                <YAxis dataKey="name" type="category" width={200} tickFormatter={(value) => value} />
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Bar dataKey="costPerConversion" fill="#ef4444" />
               </BarChart>
@@ -294,7 +324,7 @@ export function MetaDashboard() {
             <TrendingUp className="mr-2 text-purple-600" size={24} />
             Resumo de Performance
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <p className="text-3xl font-bold text-blue-600">{((totals.clicks / totals.impressions) * 100).toFixed(2)}%</p>
               <p className="text-gray-600 mt-2">CTR Médio Geral</p>
@@ -307,8 +337,15 @@ export function MetaDashboard() {
               <p className="text-3xl font-bold text-orange-600">{formatCurrency(totals.cost / (totals.clicks || 1))}</p>
               <p className="text-gray-600 mt-2">CPC Médio Geral</p>
             </div>
+            <div className="text-center p-4 bg-pink-50 rounded-lg">
+              <p className="text-3xl font-bold text-pink-600">{averageFrequency.toFixed(2)}</p>
+              <p className="text-gray-600 mt-2">Frequência Média Geral</p>
+            </div>
           </div>
         </div>
+         <footer className="mt-12 text-center text-gray-500 text-sm">
+          &copy; {new Date().getFullYear()} Canal Solar - Todos os direitos reservados.
+        </footer>
       </div>
     </div>
   );

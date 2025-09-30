@@ -316,6 +316,9 @@ export function GoogleDashboard() {
             </div>
           </div>
         </div>
+        <footer className="mt-12 text-center text-gray-500 text-sm">
+          &copy; {new Date().getFullYear()} Canal Solar - Todos os direitos reservados.
+        </footer>
       </div>
     </div>
   );

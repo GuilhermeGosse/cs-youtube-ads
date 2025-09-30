@@ -7,6 +7,7 @@ export interface AggregatedCampaign {
     reach?: number;
     ctr: number;
     avgCpc: number;
+    frequency?: number;
     cost: number;
     conversions: number;
     costPerConversion: number;
