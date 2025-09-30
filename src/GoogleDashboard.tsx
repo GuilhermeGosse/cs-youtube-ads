@@ -166,19 +166,19 @@ export function GoogleDashboard() {
            <MetricCard title="Investimento Total" value={formatCurrency(totals.cost)} subtitle="Custo das campanhas" icon={DollarSign} gradient="bg-gradient-to-br from-orange-500 to-red-500" />
            <MetricCard title="Total de Conversões" value={formatNumber(totals.conversions)} subtitle="Resultados alcançados" icon={Target} gradient="bg-gradient-to-br from-green-500 to-emerald-600" />
         </div>
-        <div className="flex items-center space-x-2 bg-blue-100 px-4 py-2 rounded-lg">
+        <div className="flex items-center space-x-2 bg-gray-200 px-4 py-2 rounded-lg">
             <input
               type="date"
               value={dateRange.start || ''}
               onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              className="text-sm font-medium text-blue-800 bg-transparent outline-none"
+              className="text-sm font-medium text-gray-800 bg-transparent outline-none"
             />
             <span>-</span>
             <input
               type="date"
               value={dateRange.end || ''}
               onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              className="text-sm font-medium text-blue-800 bg-transparent outline-none"
+              className="text-sm font-medium text-gray-800 bg-transparent outline-none"
             />
             <input
               type="text"
