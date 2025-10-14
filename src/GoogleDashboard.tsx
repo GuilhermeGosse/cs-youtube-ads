@@ -23,27 +23,33 @@ export function GoogleDashboard() {
     end: ''
   });
 
-  useEffect(() => {
-    fetch('https://app.consultoriacs.com.br/api/google_ads')
-      .then(res => res.json())
-      .then(data => {
-        const formatted: DailyCampaignEntry[] = data.map((c: any) => ({
-          id: String(c.id),
-          name: c.campaign_name,
-          type: 'Geração de demanda',
-          clicks: Number(c.clicks) || 0,
-          date: c.date,
-          impressions: Number(c.impressions) || 0,
-          ctr: Number(c.ctr) || 0,
-          cost: Number(c.cost) || 0,
-          conversions: Number(c.conversions) || 0,
-          avgCpc: (Number(c.clicks) || 0) > 0 ? (Number(c.cost) || 0) / (Number(c.clicks) || 0) : 0,
-          costPerConversion: (Number(c.conversions) || 0) > 0 ? (Number(c.cost) || 0) / (Number(c.conversions) || 0) : 0,
-        }));
-        setRawCampaignsData(formatted);
-      })
-      .catch(err => console.error('Erro ao carregar dados:', err));
-  }, []);
+ useEffect(() => {
+  const params = new URLSearchParams();
+  if (dateRange.start) params.append('start', dateRange.start);
+  if (dateRange.end) params.append('end', dateRange.end);
+
+  const url = `https://app.consultoriacs.com.br/api/google_ads?${params.toString()}`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const formatted: DailyCampaignEntry[] = data.map((c: any) => ({
+        id: String(c.id),
+        name: c.campaign_name,
+        type: 'Geração de demanda',
+        clicks: Number(c.clicks) || 0,
+        date: c.date,
+        impressions: Number(c.impressions) || 0,
+        ctr: Number(c.ctr) || 0,
+        cost: Number(c.cost) || 0,
+        conversions: Number(c.conversions) || 0,
+        avgCpc: (Number(c.clicks) || 0) > 0 ? (Number(c.cost) || 0) / (Number(c.clicks) || 0) : 0,
+        costPerConversion: (Number(c.conversions) || 0) > 0 ? (Number(c.cost) || 0) / (Number(c.conversions) || 0) : 0,
+      }));
+      setRawCampaignsData(formatted);
+    })
+    .catch(err => console.error('Erro ao carregar dados:', err));
+}, [dateRange]);
   
   const filteredDailyCampaigns = useMemo(() => {
     let filtered = rawCampaignsData;
